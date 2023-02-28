@@ -2,8 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -107,12 +111,99 @@ func makeQuery(client api.GQLClient, repoOwner, repoName string, manifestCursor,
 	}
 }
 
+type ClearlyDefinedDefinition struct {
+	Licensed struct {
+		Declared string
+		Facets   struct {
+			Core struct {
+				Discovered struct {
+					Expressions []string
+				}
+			}
+		}
+	}
+}
+
+func getLicense(packageManager, packageName, version string) (string, string, error) {
+	client := &http.Client{}
+
+	cdType := packageManager
+	cdProvider := packageManager
+	cdNamespace := "-"
+	cdName := packageName
+	cdRevision := version
+
+	if packageManager == "pip" {
+		cdType = "pypi"
+		cdProvider = "pypi"
+	} else if packageManager == "npm" {
+		cdType = "npm"
+		cdProvider = "npmjs"
+		if strings.HasPrefix(packageName, "@") {
+			packageParts := strings.SplitN(packageName, "/", 2)
+			cdNamespace = packageParts[0]
+			cdName = packageParts[1]
+		}
+	} else if packageManager == "go" {
+		cdType = "go"
+		cdProvider = "golang"
+		packageParts := strings.SplitN(packageName, "/", 3)
+		if len(packageParts) != 3 {
+			return "", "", errors.New("Unable to parse go package " + packageName)
+		}
+		cdNamespace = packageParts[0] + "/" + packageParts[1]
+		cdName = packageParts[2]
+		cdRevision = "v" + version
+	}
+
+	// Useful for debugging ecosystems!
+	//log.Printf("%s %s %s %s %s", cdType, cdProvider, cdNamespace, cdName, cdRevision)
+
+	req, err := http.NewRequest("GET", "https://api.clearlydefined.io/definitions/"+url.PathEscape(cdType)+"/"+url.PathEscape(cdProvider)+"/"+url.PathEscape(cdNamespace)+"/"+url.PathEscape(cdName)+"/"+url.PathEscape(cdRevision), nil)
+	if err != nil {
+		log.Print(err)
+		return "", "", err
+	}
+
+	req.Header.Add("Accept", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Print(err)
+		return "", "", err
+	}
+
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Print(err)
+		return "", "", err
+	}
+
+	def := ClearlyDefinedDefinition{}
+	err = json.Unmarshal(body, &def)
+	if err != nil {
+		log.Print(err)
+		return "", "", err
+	}
+
+	declared := def.Licensed.Declared
+	discovered := ""
+
+	if len(def.Licensed.Facets.Core.Discovered.Expressions) > 0 {
+		discovered = def.Licensed.Facets.Core.Discovered.Expressions[0]
+	}
+
+	return declared, discovered, nil
+}
+
 type Package struct {
 	PackageName             string
 	SPDXID                  string
 	PackageVersion          string
 	PackageDownloadLocation string
 	FilesAnalyzed           bool
+	PackageLicenseConcluded string
+	PackageLicenseDeclared  string
 }
 
 type SPDXDoc struct {
@@ -148,7 +239,7 @@ func main() {
 	i := 0
 
 	for _, manifestMap := range dependencies {
-		for _, packageManagerMap := range manifestMap {
+		for packageManager, packageManagerMap := range manifestMap {
 			for packageName, requirements := range packageManagerMap {
 				pkg := Package{
 					PackageName:             packageName,
@@ -156,8 +247,16 @@ func main() {
 					PackageVersion:          requirements[2:],
 					PackageDownloadLocation: "NOASSERTION",
 					FilesAnalyzed:           false,
+					PackageLicenseDeclared:  "NOASSERTION",
+					PackageLicenseConcluded: "NOASSERTION",
 				}
 
+				declared, discovered, err := getLicense(packageManager, packageName, requirements[2:])
+				if err == nil && len(declared) > 0 {
+					pkg.PackageLicenseDeclared = declared
+				} else if err == nil && len(discovered) > 0 {
+					pkg.PackageLicenseConcluded = discovered
+				}
 				packages = append(packages, pkg)
 				i += 1
 			}
