@@ -2,114 +2,21 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	gh "github.com/cli/go-gh"
-	"github.com/cli/go-gh/pkg/api"
 	"github.com/cli/go-gh/pkg/repository"
-	graphql "github.com/cli/shurcooL-graphql"
 	"github.com/spf13/pflag"
+
+	"github.com/steiza/gh-sbom/pkg/cyclonedx"
+	dg "github.com/steiza/gh-sbom/pkg/dependency-graph"
+	"github.com/steiza/gh-sbom/pkg/spdx"
 )
-
-type Query struct {
-	Repository struct {
-		DependencyGraphManifests struct {
-			Nodes []struct {
-				Filename     string
-				Dependencies struct {
-					Nodes []struct {
-						PackageManager string
-						PackageName    string
-						Requirements   string
-					}
-					PageInfo struct {
-						HasNextPage bool
-						EndCursor   string
-					}
-				} `graphql:"dependencies(first: $first, after: $dependencyCursor)"`
-			}
-			PageInfo struct {
-				HasNextPage bool
-				EndCursor   string
-			}
-		} `graphql:"dependencyGraphManifests(first: $first, after: $manifestCursor)"`
-	} `graphql:"repository(name: $name, owner: $owner)"`
-}
-
-type DependencyMap map[string]map[string]map[string]string
-
-func getDependencies(repoOwner, repoName string) DependencyMap {
-	dependencies := make(DependencyMap)
-
-	opts := api.ClientOptions{
-		Headers: map[string]string{"Accept": "application/vnd.github.hawkgirl-preview+json"},
-	}
-
-	client, err := gh.GQLClient(&opts)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var manifestCursor, dependencyCursor *string
-
-	for {
-		var query Query
-
-		makeQuery(client, repoOwner, repoName, (*graphql.String)(manifestCursor), (*graphql.String)(dependencyCursor), &query, &dependencies)
-
-		manifestCursor = &query.Repository.DependencyGraphManifests.PageInfo.EndCursor
-
-		if !query.Repository.DependencyGraphManifests.PageInfo.HasNextPage {
-			break
-		}
-	}
-
-	return dependencies
-}
-
-func makeQuery(client api.GQLClient, repoOwner, repoName string, manifestCursor, dependencyCursor *graphql.String, query *Query, dependencies *DependencyMap) {
-	variables := map[string]interface{}{
-		"name":             graphql.String(repoName),
-		"owner":            graphql.String(repoOwner),
-		"first":            graphql.Int(100),
-		"manifestCursor":   manifestCursor,
-		"dependencyCursor": dependencyCursor,
-	}
-
-	err := client.Query("RepositoryDependencies", &query, variables)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, eachManifestNode := range query.Repository.DependencyGraphManifests.Nodes {
-		for _, eachDependencyNode := range eachManifestNode.Dependencies.Nodes {
-			packageManager := strings.ToLower(eachDependencyNode.PackageManager)
-			packageName := strings.ToLower(eachDependencyNode.PackageName)
-
-			if _, ok := (*dependencies)[eachManifestNode.Filename]; !ok {
-				(*dependencies)[eachManifestNode.Filename] = make(map[string]map[string]string)
-			}
-			if _, ok := (*dependencies)[eachManifestNode.Filename][packageManager]; !ok {
-				(*dependencies)[eachManifestNode.Filename][packageManager] = make(map[string]string)
-			}
-			(*dependencies)[eachManifestNode.Filename][packageManager][packageName] = eachDependencyNode.Requirements
-		}
-
-		dependencyCursor = (*graphql.String)(&eachManifestNode.Dependencies.PageInfo.EndCursor)
-
-		if eachManifestNode.Dependencies.PageInfo.HasNextPage {
-			var newQuery Query
-			makeQuery(client, repoOwner, repoName, manifestCursor, dependencyCursor, &newQuery, dependencies)
-		}
-	}
-}
 
 type ClearlyDefinedDefinition struct {
 	Licensed struct {
@@ -124,42 +31,91 @@ type ClearlyDefinedDefinition struct {
 	}
 }
 
-func getLicense(packageManager, packageName, version string) (string, string, error) {
-	client := &http.Client{}
+type Purl struct {
+	cdType     string
+	cdProvider string
+	Provider   string
+	Namespace  string
+	Name       string
+	Version    string
+}
 
-	cdType := packageManager
-	cdProvider := packageManager
-	cdNamespace := "-"
-	cdName := packageName
-	cdRevision := version
+func getPurl(packageManager, packageName, version string) Purl {
+	p := Purl{}
 
-	if packageManager == "pip" {
-		cdType = "pypi"
-		cdProvider = "pypi"
+	p.Namespace = ""
+	p.Name = packageName
+	p.Version = version
+
+	if packageManager == "actions" {
+		p.cdType = "git"
+		p.cdProvider = "github"
+		p.Provider = "git"
+		packageParts := strings.SplitN(packageName, "/", 2)
+		p.Namespace = packageParts[0]
+		p.Name = packageParts[1]
+	} else if packageManager == "go" {
+		p.cdType = "go"
+		p.cdProvider = "golang"
+		p.Provider = "golang"
+		packageParts := strings.SplitN(packageName, "/", 3)
+		if len(packageParts) == 2 {
+			p.Namespace = packageParts[0]
+			p.Name = packageParts[1]
+		} else if len(packageParts) == 3 {
+			p.Namespace = packageParts[0] + "/" + packageParts[1]
+			p.Name = packageParts[2]
+		}
+	} else if packageManager == "maven" {
+		p.cdType = "maven"
+		p.cdProvider = "mavenCentral"
+		p.Provider = "maven"
+		packageParts := strings.SplitN(packageName, ":", 2)
+		p.Namespace = packageParts[0]
+		p.Name = packageParts[1]
 	} else if packageManager == "npm" {
-		cdType = "npm"
-		cdProvider = "npmjs"
+		p.cdType = "npm"
+		p.cdProvider = "npmjs"
+		p.Provider = "npm"
 		if strings.HasPrefix(packageName, "@") {
 			packageParts := strings.SplitN(packageName, "/", 2)
-			cdNamespace = packageParts[0]
-			cdName = packageParts[1]
+			p.Namespace = packageParts[0]
+			p.Name = packageParts[1]
 		}
-	} else if packageManager == "go" {
-		cdType = "go"
-		cdProvider = "golang"
-		packageParts := strings.SplitN(packageName, "/", 3)
-		if len(packageParts) != 3 {
-			return "", "", errors.New("Unable to parse go package " + packageName)
-		}
-		cdNamespace = packageParts[0] + "/" + packageParts[1]
-		cdName = packageParts[2]
-		cdRevision = "v" + version
+	} else if packageManager == "pip" {
+		p.cdType = "pypi"
+		p.cdProvider = "pypi"
+		p.Provider = "pypi"
+	} else if packageManager == "gem" {
+		p.cdType = "gem"
+		p.cdProvider = "rubygems"
+		p.Provider = "gem"
 	}
 
-	// Useful for debugging ecosystems!
-	//log.Printf("%s %s %s %s %s", cdType, cdProvider, cdNamespace, cdName, cdRevision)
+	return p
+}
 
-	req, err := http.NewRequest("GET", "https://api.clearlydefined.io/definitions/"+url.PathEscape(cdType)+"/"+url.PathEscape(cdProvider)+"/"+url.PathEscape(cdNamespace)+"/"+url.PathEscape(cdName)+"/"+url.PathEscape(cdRevision), nil)
+func (p Purl) String() string {
+	// https://github.com/package-url/purl-spec/blob/master/PURL-SPECIFICATION.rst
+	prefix := "pkg:" + p.Provider + "/"
+	if p.Namespace != "" {
+		namespaceParts := strings.Split(p.Namespace, "/")
+		for _, part := range namespaceParts {
+			prefix = prefix + url.QueryEscape(part) + "/"
+		}
+	}
+
+	return prefix + url.QueryEscape(p.Name) + "@" + url.QueryEscape(p.Version)
+}
+
+func getLicense(p *Purl) (string, string, error) {
+	client := &http.Client{}
+
+	if p.Namespace == "" {
+		p.Namespace = "-"
+	}
+
+	req, err := http.NewRequest("GET", "https://api.clearlydefined.io/definitions/"+url.PathEscape(p.cdType)+"/"+url.PathEscape(p.cdProvider)+"/"+url.PathEscape(p.Namespace)+"/"+url.PathEscape(p.Name)+"/v"+url.PathEscape(p.Version), nil)
 	if err != nil {
 		log.Print(err)
 		return "", "", err
@@ -196,28 +152,10 @@ func getLicense(packageManager, packageName, version string) (string, string, er
 	return declared, discovered, nil
 }
 
-type Package struct {
-	PackageName             string
-	SPDXID                  string
-	PackageVersion          string
-	PackageDownloadLocation string
-	FilesAnalyzed           bool
-	PackageLicenseConcluded string
-	PackageLicenseDeclared  string
-}
-
-type SPDXDoc struct {
-	SPDXVersion  string
-	DataLicense  string
-	SPDXID       string
-	DocumentName string
-	Creator      string
-	Created      string
-	Packages     []Package
-}
-
 func main() {
 	repoOverride := pflag.StringP("repository", "r", "", "Repository to query. Current directory used by default.")
+	cdx := pflag.BoolP("cyclonedx", "c", false, "Use CycloneDX SBOM format. Default is to use SPDX.")
+	includeLicense := pflag.BoolP("license", "l", false, "Include license information from clearlydefined.io in SBOM.")
 	pflag.Parse()
 
 	var repo repository.Repository
@@ -233,49 +171,97 @@ func main() {
 		log.Fatal(err)
 	}
 
-	dependencies := getDependencies(repo.Owner(), repo.Name())
-	packages := []Package{}
+	dependencies := dg.GetDependencies(repo.Owner(), repo.Name())
 
 	i := 0
 
-	for _, manifestMap := range dependencies {
-		for packageManager, packageManagerMap := range manifestMap {
-			for packageName, requirements := range packageManagerMap {
-				pkg := Package{
-					PackageName:             packageName,
-					SPDXID:                  fmt.Sprintf("SPDXRef-%d", i),
-					PackageVersion:          requirements[2:],
-					PackageDownloadLocation: "NOASSERTION",
-					FilesAnalyzed:           false,
-					PackageLicenseDeclared:  "NOASSERTION",
-					PackageLicenseConcluded: "NOASSERTION",
-				}
+	if *cdx {
+		components := []cyclonedx.Component{}
 
-				declared, discovered, err := getLicense(packageManager, packageName, requirements[2:])
-				if err == nil && len(declared) > 0 {
-					pkg.PackageLicenseDeclared = declared
-				} else if err == nil && len(discovered) > 0 {
-					pkg.PackageLicenseConcluded = discovered
+		for packageManager, packageManagerMap := range dependencies {
+			for packageName, requirementsMap := range packageManagerMap {
+				for requirements, _ := range requirementsMap {
+					p := getPurl(packageManager, packageName, requirements)
+
+					c := cyclonedx.Component{
+						Type:    "library",
+						Name:    p.Name,
+						Version: p.Version,
+						Purl:    p.String(),
+					}
+
+					if p.Namespace != "" {
+						c.Group = p.Namespace
+					}
+
+					if *includeLicense {
+						l := []cyclonedx.LicenseExpression{}
+						declared, discovered, err := getLicense(&p)
+						if err == nil && len(declared) > 0 {
+							le := cyclonedx.LicenseExpression{
+								Expression: declared,
+							}
+							c.Licenses = append(l, le)
+						} else if err == nil && len(discovered) > 0 {
+							le := cyclonedx.LicenseExpression{
+								Expression: discovered,
+							}
+							c.Licenses = append(l, le)
+						}
+					}
+
+					components = append(components, c)
 				}
-				packages = append(packages, pkg)
-				i += 1
 			}
 		}
-	}
 
-	doc := SPDXDoc{
-		SPDXVersion:  "SPDX-2.3",
-		DataLicense:  "CC0-1.0",
-		SPDXID:       "SPDXRef-DOCUMENT",
-		DocumentName: fmt.Sprintf("%s/%s/%s", repo.Host(), repo.Owner(), repo.Name()),
-		Creator:      "Tool https://github.com/steiza/gh-sbom",
-		Created:      time.Now().UTC().Format("2006-01-02T15:04:05Z"),
-		Packages:     packages,
-	}
+		doc := cyclonedx.MakeDoc(components)
+		jsonBinary, err := json.Marshal(&doc)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(string(jsonBinary))
 
-	jsonBinary, err := json.Marshal(&doc)
-	if err != nil {
-		log.Fatal(err)
+	} else {
+		packages := []spdx.Package{}
+
+		for packageManager, packageManagerMap := range dependencies {
+			for packageName, requirementsMap := range packageManagerMap {
+				for requirements, _ := range requirementsMap {
+					purl := getPurl(packageManager, packageName, requirements)
+
+					pkg := spdx.Package{
+						PackageName:             purl.Name,
+						SPDXID:                  fmt.Sprintf("SPDXRef-%d", i),
+						PackageVersion:          purl.Version,
+						PackageDownloadLocation: "NOASSERTION",
+						FilesAnalyzed:           false,
+						ExternalRef:             "PACKAGE-MANAGER purl " + purl.String(),
+						PackageLicenseDeclared:  "NOASSERTION",
+						PackageLicenseConcluded: "NOASSERTION",
+					}
+
+					if *includeLicense {
+						declared, discovered, err := getLicense(&purl)
+						if err == nil && len(declared) > 0 {
+							pkg.PackageLicenseDeclared = declared
+						} else if err == nil && len(discovered) > 0 {
+							pkg.PackageLicenseConcluded = discovered
+						}
+					}
+
+					packages = append(packages, pkg)
+					i += 1
+				}
+			}
+		}
+
+		doc := spdx.MakeDoc(repo.Host(), repo.Owner(), repo.Name(), packages)
+
+		jsonBinary, err := json.Marshal(&doc)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(string(jsonBinary))
 	}
-	fmt.Println(string(jsonBinary))
 }
