@@ -13,9 +13,9 @@ import (
 	"github.com/cli/go-gh/pkg/repository"
 	"github.com/spf13/pflag"
 
-	"github.com/steiza/gh-sbom/pkg/cyclonedx"
-	dg "github.com/steiza/gh-sbom/pkg/dependency-graph"
-	"github.com/steiza/gh-sbom/pkg/spdx"
+	"github.com/advanced-security/gh-sbom/pkg/cyclonedx"
+	dg "github.com/advanced-security/gh-sbom/pkg/dependency-graph"
+	"github.com/advanced-security/gh-sbom/pkg/spdx"
 )
 
 type ClearlyDefinedDefinition struct {

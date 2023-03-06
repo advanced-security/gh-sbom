@@ -1,4 +1,4 @@
-module github.com/steiza/gh-sbom
+module github.com/advanced-security/gh-sbom
 
 go 1.18
 

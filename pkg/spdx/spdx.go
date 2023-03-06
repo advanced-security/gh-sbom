@@ -33,7 +33,7 @@ func MakeDoc(host, owner, name string, packages []Package) Doc {
 		DataLicense:  "CC0-1.0",
 		SPDXID:       "SPDXRef-DOCUMENT",
 		DocumentName: fmt.Sprintf("%s/%s/%s", host, owner, name),
-		Creator:      "Tool https://github.com/steiza/gh-sbom",
+		Creator:      "Tool https://github.com/advanced-security/gh-sbom",
 		Created:      time.Now().UTC().Format("2006-01-02T15:04:05Z"),
 		Packages:     packages,
 	}
