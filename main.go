@@ -66,6 +66,10 @@ func getPurl(packageManager, packageName, version string) Purl {
 			p.Namespace = packageParts[0] + "/" + packageParts[1]
 			p.Name = packageParts[2]
 		}
+	} else if packageManager == "rubygems" {
+		p.cdType = "gem"
+		p.cdProvider = "rubygems"
+		p.Provider = "gem"
 	} else if packageManager == "maven" {
 		p.cdType = "maven"
 		p.cdProvider = "mavenCentral"
@@ -86,10 +90,6 @@ func getPurl(packageManager, packageName, version string) Purl {
 		p.cdType = "pypi"
 		p.cdProvider = "pypi"
 		p.Provider = "pypi"
-	} else if packageManager == "gem" {
-		p.cdType = "gem"
-		p.cdProvider = "rubygems"
-		p.Provider = "gem"
 	}
 
 	return p
@@ -115,7 +115,12 @@ func getLicense(p *Purl) (string, string, error) {
 		p.Namespace = "-"
 	}
 
-	req, err := http.NewRequest("GET", "https://api.clearlydefined.io/definitions/"+url.PathEscape(p.cdType)+"/"+url.PathEscape(p.cdProvider)+"/"+url.PathEscape(p.Namespace)+"/"+url.PathEscape(p.Name)+"/v"+url.PathEscape(p.Version), nil)
+	version := "v" + p.Version
+	if p.cdType == "gem" || p.cdType == "pypi" || p.cdType == "maven" || p.cdType == "npm" {
+		version = p.Version
+	}
+
+	req, err := http.NewRequest("GET", "https://api.clearlydefined.io/definitions/"+url.PathEscape(p.cdType)+"/"+url.PathEscape(p.cdProvider)+"/"+url.PathEscape(p.Namespace)+"/"+url.PathEscape(p.Name)+"/"+url.PathEscape(version), nil)
 	if err != nil {
 		log.Print(err)
 		return "", "", err
