@@ -235,23 +235,30 @@ func main() {
 				for requirements, _ := range requirementsMap {
 					purl := getPurl(packageManager, packageName, requirements)
 
+					externalRef := spdx.ExternalRef{
+						ReferenceCategory: "PACKAGE-MANAGER",
+						ReferenceType:     "purl",
+						ReferenceLocator:  purl.String(),
+					}
+
 					pkg := spdx.Package{
-						PackageName:             purl.Name,
-						SPDXID:                  fmt.Sprintf("SPDXRef-%d", i),
-						PackageVersion:          purl.Version,
-						PackageDownloadLocation: "NOASSERTION",
-						FilesAnalyzed:           false,
-						ExternalRef:             "PACKAGE-MANAGER purl " + purl.String(),
-						PackageLicenseDeclared:  "NOASSERTION",
-						PackageLicenseConcluded: "NOASSERTION",
+						Name:             purl.Name,
+						SPDXID:           fmt.Sprintf("SPDXRef-%d", i),
+						VersionInfo:      purl.Version,
+						DownloadLocation: "NOASSERTION",
+						FilesAnalyzed:    false,
+						ExternalRefs:     []spdx.ExternalRef{externalRef},
+						LicenseDeclared:  "NOASSERTION",
+						LicenseConcluded: "NOASSERTION",
+						Supplier:         "NOASSERTION",
 					}
 
 					if *includeLicense {
 						declared, discovered, err := getLicense(&purl)
 						if err == nil && len(declared) > 0 {
-							pkg.PackageLicenseDeclared = declared
+							pkg.LicenseDeclared = declared
 						} else if err == nil && len(discovered) > 0 {
-							pkg.PackageLicenseConcluded = discovered
+							pkg.LicenseConcluded = discovered
 						}
 					}
 

@@ -8,22 +8,34 @@ Here's an example of generating a SPDX SBOM:
 ```
 $ gh sbom -l -r steiza/dependabot-example | jq
 {
-  "SPDXVersion": "SPDX-2.3",
-  "DataLicense": "CC0-1.0",
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
-  "DocumentName": "github.com/steiza/dependabot-example",
-  "Creator": "Tool https://github.com/advanced-security/gh-sbom",
-  "Created": "2023-03-06T00:17:59Z",
-  "Packages": [
-      {
-      "PackageName": "flake8",
-      "SPDXID": "SPDXRef-40",
-      "PackageVersion": "3.8.3",
-      "PackageDownloadLocation": "NOASSERTION",
-      "FilesAnalyzed": false,
-      "ExternalRef": "PACKAGE-MANAGER purl pkg:pypi/flake8@3.8.3",
-      "PackageLicenseConcluded": "NOASSERTION",
-      "PackageLicenseDeclared": "MIT"
+  "name": "github.com/steiza/dependabot-example",
+  "creationInfo": {
+    "creators": [
+      "Organization: GitHub, Inc",
+      "Tool: gh-sbom"
+    ],
+    "created": "2023-03-08T15:19:43Z"
+  },
+  "packages": [
+    {
+      "name": "urllib3",
+      "SPDXID": "SPDXRef-35",
+      "versionInfo": "1.25.10",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/urllib3@1.25.10"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "supplier": "NOASSERTION"
     },
     ...
 ```
@@ -34,14 +46,27 @@ $ gh sbom -c -l -r steiza/dependabot-example | jq
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.4",
-  "serialNumber": "",
   "version": 1,
+  "metadata": {
+    "timestamp": "2023-03-08T15:21:32Z",
+    "tools": [
+      {
+        "vendor": "advanced-security",
+        "name": "gh-sbom"
+      }
+    ],
+    "licenses": [
+      {
+        "expression": "CC0-1.0"
+      }
+    ]
+  },
   "components": [
     {
       "type": "library",
-      "name": "flake8",
-      "version": "3.8.3",
-      "purl": "pkg:pypi/flake8@3.8.3",
+      "name": "urllib3",
+      "version": "1.25.10",
+      "purl": "pkg:pypi/urllib3@1.25.10",
       "licenses": [
         {
           "Expression": "MIT"
