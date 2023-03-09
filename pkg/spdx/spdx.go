@@ -45,6 +45,7 @@ type Doc struct {
 	CreationInfo      CreationInfo   `json:"creationInfo"`
 	Packages          []Package      `json:"packages"`
 	Relationships     []Relationship `json:"relationships"`
+	DocumentDescribes []string       `json:"documentDescribes"`
 }
 
 func MakeDoc(host, owner, name string, packages []Package) Doc {
@@ -82,13 +83,14 @@ func MakeDoc(host, owner, name string, packages []Package) Doc {
 			Creators: []string{"Organization: GitHub, Inc", "Tool: gh-sbom"},
 			Created:  time.Now().UTC().Format("2006-01-02T15:04:05Z"),
 		},
-		Relationships: []Relationship{},
-		Packages:      append([]Package{mainPackage}, packages...),
+		Relationships:     []Relationship{},
+		Packages:          append([]Package{mainPackage}, packages...),
+		DocumentDescribes: []string{mainPackage.SPDXID},
 	}
 
 	for _, p := range doc.Packages {
 		doc.Relationships = append(doc.Relationships, Relationship{
-			Element: "SPDXRef-mainPackage",
+			Element: mainPackage.SPDXID,
 			Type:    "DEPENDS_ON",
 			Related: p.SPDXID,
 		})
