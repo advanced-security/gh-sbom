@@ -44,6 +44,27 @@ func MakeDoc(host, owner, name string, packages []Package) Doc {
 	// https://spdx.github.io/spdx-spec/v2.3/
 	docName := fmt.Sprintf("%s/%s/%s", host, owner, name)
 
+	mainPackage := Package{
+		Name:        name,
+		SPDXID:      "SPDXRef-mainPackage",
+		VersionInfo: "",
+		DownloadLocation: fmt.Sprintf(
+			"git+https://%s/%s/%s.git",
+			host, owner, name,
+		),
+		FilesAnalyzed: false,
+		ExternalRefs: []ExternalRef{
+			{
+				ReferenceCategory: "PACKAGE-MANAGER",
+				ReferenceType:     "purl",
+				ReferenceLocator:  fmt.Sprintf("pkg:github/%s/%s", owner, name),
+			},
+		},
+		LicenseConcluded: "NOASSERTION",
+		LicenseDeclared:  "NOASSERTION",
+		Supplier:         "NOASSERTION",
+	}
+
 	return Doc{
 		SPDXVersion:       "SPDX-2.3",
 		DataLicense:       "CC0-1.0",
@@ -54,6 +75,6 @@ func MakeDoc(host, owner, name string, packages []Package) Doc {
 			Creators: []string{"Organization: GitHub, Inc", "Tool: gh-sbom"},
 			Created:  time.Now().UTC().Format("2006-01-02T15:04:05Z"),
 		},
-		Packages: packages,
+		Packages: append([]Package{mainPackage}, packages...),
 	}
 }
