@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/cli/go-gh v1.1.0
 	github.com/cli/shurcooL-graphql v0.0.2
+	github.com/google/uuid v1.3.0
 	github.com/spf13/pflag v1.0.5
 )
 

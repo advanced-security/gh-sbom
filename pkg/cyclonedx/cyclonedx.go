@@ -5,7 +5,7 @@ import (
 )
 
 type LicenseExpression struct {
-	Expression string `json:expression`
+	Expression string `json:"expression"`
 }
 
 type Component struct {

@@ -12,6 +12,7 @@ $ gh sbom -l -r steiza/dependabot-example | jq
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "github.com/steiza/dependabot-example",
+  "documentNamespace": "https://spdx.org/spdxdocs/github.com/steiza/dependabot-example-316abfe8-962e-4d21-9887-a347027bb216",
   "creationInfo": {
     "creators": [
       "Organization: GitHub, Inc",
@@ -69,7 +70,7 @@ $ gh sbom -c -l -r steiza/dependabot-example | jq
       "purl": "pkg:pypi/urllib3@1.25.10",
       "licenses": [
         {
-          "Expression": "MIT"
+          "expression": "MIT"
         }
       ]
     },
