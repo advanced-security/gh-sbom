@@ -86,5 +86,13 @@ func MakeDoc(host, owner, name string, packages []Package) Doc {
 		Packages:      append([]Package{mainPackage}, packages...),
 	}
 
+	for _, p := range doc.Packages {
+		doc.Relationships = append(doc.Relationships, Relationship{
+			Element: "SPDXRef-mainPackage",
+			Type:    "DEPENDS_ON",
+			Related: p.SPDXID,
+		})
+	}
+
 	return doc
 }
