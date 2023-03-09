@@ -30,14 +30,21 @@ type CreationInfo struct {
 	Created  string   `json:"created"`
 }
 
+type Relationship struct {
+	Element string `json:"spdxElementId"`
+	Type    string `json:"relationshipType"`
+	Related string `json:"relatedSpdxElement"`
+}
+
 type Doc struct {
 	SPDXVersion       string `json:"spdxVersion"`
 	DataLicense       string `json:"dataLicense"`
 	SPDXID            string
-	Name              string       `json:"name"`
-	DocumentNamespace string       `json:"documentNamespace"`
-	CreationInfo      CreationInfo `json:"creationInfo"`
-	Packages          []Package    `json:"packages"`
+	Name              string         `json:"name"`
+	DocumentNamespace string         `json:"documentNamespace"`
+	CreationInfo      CreationInfo   `json:"creationInfo"`
+	Packages          []Package      `json:"packages"`
+	Relationships     []Relationship `json:"relationships"`
 }
 
 func MakeDoc(host, owner, name string, packages []Package) Doc {
@@ -65,7 +72,7 @@ func MakeDoc(host, owner, name string, packages []Package) Doc {
 		Supplier:         "NOASSERTION",
 	}
 
-	return Doc{
+	doc := Doc{
 		SPDXVersion:       "SPDX-2.3",
 		DataLicense:       "CC0-1.0",
 		SPDXID:            "SPDXRef-DOCUMENT",
@@ -75,6 +82,9 @@ func MakeDoc(host, owner, name string, packages []Package) Doc {
 			Creators: []string{"Organization: GitHub, Inc", "Tool: gh-sbom"},
 			Created:  time.Now().UTC().Format("2006-01-02T15:04:05Z"),
 		},
-		Packages: append([]Package{mainPackage}, packages...),
+		Relationships: []Relationship{},
+		Packages:      append([]Package{mainPackage}, packages...),
 	}
+
+	return doc
 }
