@@ -48,7 +48,7 @@ type Doc struct {
 	DocumentDescribes []string       `json:"documentDescribes"`
 }
 
-func MakeDoc(host, owner, name string, packages []Package) Doc {
+func MakeDoc(toolVersion, host, owner, name string, packages []Package) Doc {
 	// https://spdx.github.io/spdx-spec/v2.3/
 	docName := fmt.Sprintf("%s/%s/%s", host, owner, name)
 
@@ -80,7 +80,7 @@ func MakeDoc(host, owner, name string, packages []Package) Doc {
 		Name:              docName,
 		DocumentNamespace: "https://spdx.org/spdxdocs/" + docName + "-" + uuid.New().String(),
 		CreationInfo: CreationInfo{
-			Creators: []string{"Organization: GitHub, Inc", "Tool: gh-sbom"},
+			Creators: []string{"Organization: GitHub, Inc", "Tool: gh-sbom-" + toolVersion},
 			Created:  time.Now().UTC().Format("2006-01-02T15:04:05Z"),
 		},
 		Relationships:     []Relationship{},

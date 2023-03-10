@@ -18,8 +18,9 @@ type Component struct {
 }
 
 type Tool struct {
-	Vendor string `json:"vendor"`
-	Name   string `json:"name"`
+	Vendor  string `json:"vendor"`
+	Name    string `json:"name"`
+	Version string `json:"version"`
 }
 
 type License struct {
@@ -40,12 +41,13 @@ type Doc struct {
 	Components  []Component `json:"components"`
 }
 
-func MakeDoc(components []Component) Doc {
+func MakeDoc(toolVersion string, components []Component) Doc {
 	// https://cyclonedx.org/docs/1.4/json/
 
 	tool := Tool{
-		Vendor: "advanced-security",
-		Name:   "gh-sbom",
+		Vendor:  "advanced-security",
+		Name:    "gh-sbom",
+		Version: toolVersion,
 	}
 
 	license := License{

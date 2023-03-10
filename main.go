@@ -169,6 +169,8 @@ func getLicense(p *Purl) (string, string, error) {
 }
 
 func main() {
+	version := "0.0.8"
+
 	repoOverride := pflag.StringP("repository", "r", "", "Repository to query. Current directory used by default.")
 	cdx := pflag.BoolP("cyclonedx", "c", false, "Use CycloneDX SBOM format. Default is to use SPDX.")
 	includeLicense := pflag.BoolP("license", "l", false, "Include license information from clearlydefined.io in SBOM.")
@@ -189,9 +191,9 @@ func main() {
 
 	dependencies := dg.GetDependencies(repo.Owner(), repo.Name())
 
-    if len(dependencies) == 0 {
-        log.Fatal("No dependencies found\n\nIf you own this repository, check if Dependency Graph is enabled:\nhttps://" + repo.Host() + "/" + repo.Owner() + "/" + repo.Name() + "/settings/security_analysis\n\n")
-    }
+	if len(dependencies) == 0 {
+		log.Fatal("No dependencies found\n\nIf you own this repository, check if Dependency Graph is enabled:\nhttps://" + repo.Host() + "/" + repo.Owner() + "/" + repo.Name() + "/settings/security_analysis\n\n")
+	}
 
 	i := 0
 
@@ -235,7 +237,7 @@ func main() {
 			}
 		}
 
-		doc := cyclonedx.MakeDoc(components)
+		doc := cyclonedx.MakeDoc(version, components)
 		jsonBinary, err := json.Marshal(&doc)
 		if err != nil {
 			log.Fatal(err)
@@ -283,7 +285,7 @@ func main() {
 			}
 		}
 
-		doc := spdx.MakeDoc(repo.Host(), repo.Owner(), repo.Name(), packages)
+		doc := spdx.MakeDoc(version, repo.Host(), repo.Owner(), repo.Name(), packages)
 
 		jsonBinary, err := json.Marshal(&doc)
 		if err != nil {
