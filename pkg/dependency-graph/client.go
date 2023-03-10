@@ -83,7 +83,10 @@ func makeQuery(client api.GQLClient, repoOwner, repoName string, manifestCursor,
 		for _, eachDependencyNode := range eachManifestNode.Dependencies.Nodes {
 			packageManager := strings.ToLower(eachDependencyNode.PackageManager)
 			packageName := strings.ToLower(eachDependencyNode.PackageName)
-			packageVersion := eachDependencyNode.Requirements[2:]
+			packageVersion := ""
+			if len(eachDependencyNode.Requirements) > 2 {
+				packageVersion = eachDependencyNode.Requirements[2:]
+			}
 			if strings.HasPrefix(packageVersion, "v") {
 				packageVersion = packageVersion[1:]
 			}

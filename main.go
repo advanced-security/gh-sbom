@@ -111,7 +111,12 @@ func (p Purl) String() string {
 		}
 	}
 
-	return prefix + url.QueryEscape(p.Name) + "@" + url.QueryEscape(p.Version)
+	suffix := ""
+	if p.Version != "" {
+		suffix = "@" + url.QueryEscape(p.Version)
+	}
+
+	return prefix + url.QueryEscape(p.Name) + suffix
 }
 
 func getLicense(p *Purl) (string, string, error) {
