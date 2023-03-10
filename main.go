@@ -168,6 +168,28 @@ func getLicense(p *Purl) (string, string, error) {
 	return declared, discovered, nil
 }
 
+type RepoResp struct {
+	License struct {
+		SPDXId string `json:"spdx_id"`
+	}
+}
+
+func getRepoLicense(owner, repo string) string {
+	client, err := gh.RESTClient(nil)
+	if err != nil {
+		return ""
+	}
+
+	repoResp := RepoResp{}
+
+	err = client.Get("repos/"+owner+"/"+repo, &repoResp)
+	if err != nil {
+		return ""
+	}
+
+	return repoResp.License.SPDXId
+}
+
 func main() {
 	version := "0.0.8"
 
@@ -285,7 +307,12 @@ func main() {
 			}
 		}
 
-		doc := spdx.MakeDoc(version, repo.Host(), repo.Owner(), repo.Name(), packages)
+		license := getRepoLicense(repo.Owner(), repo.Name())
+		if license == "" {
+			license = "NOASSERTION"
+		}
+
+		doc := spdx.MakeDoc(version, license, repo.Host(), repo.Owner(), repo.Name(), packages)
 
 		jsonBinary, err := json.Marshal(&doc)
 		if err != nil {

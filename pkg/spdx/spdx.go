@@ -48,7 +48,7 @@ type Doc struct {
 	DocumentDescribes []string       `json:"documentDescribes"`
 }
 
-func MakeDoc(toolVersion, host, owner, name string, packages []Package) Doc {
+func MakeDoc(toolVersion, license, host, owner, name string, packages []Package) Doc {
 	// https://spdx.github.io/spdx-spec/v2.3/
 	docName := fmt.Sprintf("%s/%s/%s", host, owner, name)
 
@@ -69,7 +69,7 @@ func MakeDoc(toolVersion, host, owner, name string, packages []Package) Doc {
 			},
 		},
 		LicenseConcluded: "NOASSERTION",
-		LicenseDeclared:  "NOASSERTION",
+		LicenseDeclared:  license,
 		Supplier:         "NOASSERTION",
 	}
 
