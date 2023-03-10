@@ -189,6 +189,10 @@ func main() {
 
 	dependencies := dg.GetDependencies(repo.Owner(), repo.Name())
 
+    if len(dependencies) == 0 {
+        log.Fatal("No dependencies found\n\nIf you own this repository, check if Dependency Graph is enabled:\nhttps://" + repo.Host() + "/" + repo.Owner() + "/" + repo.Name() + "/settings/security_analysis\n\n")
+    }
+
 	i := 0
 
 	if *cdx {
