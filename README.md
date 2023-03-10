@@ -90,6 +90,12 @@ Once `gh` is installed, you can install this extension with:
 $ gh ext install advanced-security/gh-sbom
 ```
 
+If you want to upgrade to the latest version you can remove and reinstall the extension:
+```
+$ gh ext remove advanced-security/gh-sbom
+$ gh ext install advanced-security/gh-sbom
+```
+
 ## License
 
 This project is licensed under the terms of the MIT open source license. Please refer to [LICENSE.md](./LICENSE.md) for the full terms.
