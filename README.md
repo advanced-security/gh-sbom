@@ -6,32 +6,32 @@ It can optionally include license information with `-l`. License information com
 
 Here's an example of generating a SPDX SBOM:
 ```
-$ gh sbom -l -r steiza/dependabot-example | jq
+$ gh sbom -l | jq
 {
   "spdxVersion": "SPDX-2.3",
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
-  "name": "github.com/steiza/dependabot-example",
-  "documentNamespace": "https://spdx.org/spdxdocs/github.com/steiza/dependabot-example-316abfe8-962e-4d21-9887-a347027bb216",
+  "name": "github.com/advanced-security/gh-sbom",
+  "documentNamespace": "https://spdx.org/spdxdocs/github.com/advanced-security/gh-sbom-81f6ee97-cae4-42a4-9be0-840bd3dde2a7",
   "creationInfo": {
     "creators": [
       "Organization: GitHub, Inc",
-      "Tool: gh-sbom"
+      "Tool: gh-sbom-0.0.8"
     ],
-    "created": "2023-03-08T15:19:43Z"
+    "created": "2023-03-10T21:12:26Z"
   },
   "packages": [
     {
-      "name": "urllib3",
-      "SPDXID": "SPDXRef-35",
-      "versionInfo": "1.25.10",
-      "downloadLocation": "NOASSERTION",
+      "name": "gh-sbom",
+      "SPDXID": "SPDXRef-mainPackage",
+      "versionInfo": "",
+      "downloadLocation": "git+https://github.com/advanced-security/gh-sbom.git",
       "filesAnalyzed": false,
       "externalRefs": [
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:pypi/urllib3@1.25.10"
+          "referenceLocator": "pkg:github/advanced-security/gh-sbom"
         }
       ],
       "licenseConcluded": "NOASSERTION",
@@ -43,17 +43,18 @@ $ gh sbom -l -r steiza/dependabot-example | jq
 
 Or for CycloneDX use `-c`:
 ```
-$ gh sbom -c -l -r steiza/dependabot-example | jq
+$ gh sbom -c -l | jq
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.4",
   "version": 1,
   "metadata": {
-    "timestamp": "2023-03-08T15:21:32Z",
+    "timestamp": "2023-03-10T21:14:23Z",
     "tools": [
       {
         "vendor": "advanced-security",
-        "name": "gh-sbom"
+        "name": "gh-sbom",
+        "version": "0.0.8"
       }
     ],
     "licenses": [
@@ -65,14 +66,10 @@ $ gh sbom -c -l -r steiza/dependabot-example | jq
   "components": [
     {
       "type": "library",
-      "name": "urllib3",
-      "version": "1.25.10",
-      "purl": "pkg:pypi/urllib3@1.25.10",
-      "licenses": [
-        {
-          "expression": "MIT"
-        }
-      ]
+      "group": "github.com/cli",
+      "name": "go-gh",
+      "version": "1.2.1",
+      "purl": "pkg:golang/github.com/cli/go-gh@1.2.1"
     },
     ...
 ```
