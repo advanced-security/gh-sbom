@@ -50,10 +50,12 @@ func getPurl(packageManager, packageName, version string) Purl {
 	if packageManager == "actions" {
 		p.cdType = "git"
 		p.cdProvider = "github"
-		p.Provider = "git"
+		p.Provider = "github"
 		packageParts := strings.SplitN(packageName, "/", 2)
-		p.Namespace = packageParts[0]
-		p.Name = packageParts[1]
+		if len(packageParts) >= 2 {
+			p.Namespace = packageParts[0]
+			p.Name = packageParts[1]
+		}
 	} else if packageManager == "go" {
 		p.cdType = "go"
 		p.cdProvider = "golang"
@@ -75,16 +77,20 @@ func getPurl(packageManager, packageName, version string) Purl {
 		p.cdProvider = "mavenCentral"
 		p.Provider = "maven"
 		packageParts := strings.SplitN(packageName, ":", 2)
-		p.Namespace = packageParts[0]
-		p.Name = packageParts[1]
+		if len(packageParts) >= 2 {
+			p.Namespace = packageParts[0]
+			p.Name = packageParts[1]
+		}
 	} else if packageManager == "npm" {
 		p.cdType = "npm"
 		p.cdProvider = "npmjs"
 		p.Provider = "npm"
 		if strings.HasPrefix(packageName, "@") {
 			packageParts := strings.SplitN(packageName, "/", 2)
-			p.Namespace = packageParts[0]
-			p.Name = packageParts[1]
+			if len(packageParts) >= 2 {
+				p.Namespace = packageParts[0]
+				p.Name = packageParts[1]
+			}
 		}
 	} else if packageManager == "pip" {
 		p.cdType = "pypi"
