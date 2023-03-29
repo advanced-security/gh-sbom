@@ -93,6 +93,8 @@ $ gh ext remove advanced-security/gh-sbom
 $ gh ext install advanced-security/gh-sbom
 ```
 
+Finally, if you are planning to run this on a GHES instance, you will need to be on: `GHES 3.8` or higher. 
+
 ## License
 
 This project is licensed under the terms of the MIT open source license. Please refer to [LICENSE.md](./LICENSE.md) for the full terms.
