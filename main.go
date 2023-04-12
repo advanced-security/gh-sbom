@@ -15,7 +15,6 @@ import (
 
 	"github.com/advanced-security/gh-sbom/pkg/cyclonedx"
 	dg "github.com/advanced-security/gh-sbom/pkg/dependency-graph"
-	"github.com/advanced-security/gh-sbom/pkg/spdx"
 )
 
 type ClearlyDefinedDefinition struct {
@@ -38,6 +37,10 @@ type Purl struct {
 	Namespace  string
 	Name       string
 	Version    string
+}
+
+type SPDXRestAPI struct {
+    sbom    interface{}
 }
 
 func getPurl(packageManager, packageName, version string) Purl {
@@ -191,11 +194,11 @@ func getRepoLicense(owner, repo string) string {
 }
 
 func main() {
-	version := "0.0.8"
+	version := "0.0.9"
 
 	repoOverride := pflag.StringP("repository", "r", "", "Repository to query. Current directory used by default.")
 	cdx := pflag.BoolP("cyclonedx", "c", false, "Use CycloneDX SBOM format. Default is to use SPDX.")
-	includeLicense := pflag.BoolP("license", "l", false, "Include license information from clearlydefined.io in SBOM.")
+	includeLicense := pflag.BoolP("license", "l", false, "Include license information from clearlydefined.io for CycloneDX format (SPDX always includes license information).")
 	pflag.Parse()
 
 	var repo repository.Repository
@@ -211,15 +214,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	dependencies := dg.GetDependencies(repo.Owner(), repo.Name())
-
-	if len(dependencies) == 0 {
-		log.Fatal("No dependencies found\n\nIf you own this repository, check if Dependency Graph is enabled:\nhttps://" + repo.Host() + "/" + repo.Owner() + "/" + repo.Name() + "/settings/security_analysis\n\n")
-	}
-
-	i := 0
-
 	if *cdx {
+        dependencies := dg.GetDependencies(repo.Owner(), repo.Name())
+
+        if len(dependencies) == 0 {
+            log.Fatal("No dependencies found\n\nIf you own this repository, check if Dependency Graph is enabled:\nhttps://" + repo.Host() + "/" + repo.Owner() + "/" + repo.Name() + "/settings/security_analysis\n\n")
+        }
+
 		components := []cyclonedx.Component{}
 
 		for packageManager, packageManagerMap := range dependencies {
@@ -267,57 +268,26 @@ func main() {
 		fmt.Println(string(jsonBinary))
 
 	} else {
-		packages := []spdx.Package{}
-
-		for packageManager, packageManagerMap := range dependencies {
-			for packageName, requirementsMap := range packageManagerMap {
-				for requirements, _ := range requirementsMap {
-					purl := getPurl(packageManager, packageName, requirements)
-
-					externalRef := spdx.ExternalRef{
-						ReferenceCategory: "PACKAGE-MANAGER",
-						ReferenceType:     "purl",
-						ReferenceLocator:  purl.String(),
-					}
-
-					pkg := spdx.Package{
-						Name:             purl.Name,
-						SPDXID:           fmt.Sprintf("SPDXRef-%d", i),
-						VersionInfo:      purl.Version,
-						DownloadLocation: "NOASSERTION",
-						FilesAnalyzed:    false,
-						ExternalRefs:     []spdx.ExternalRef{externalRef},
-						LicenseDeclared:  "NOASSERTION",
-						LicenseConcluded: "NOASSERTION",
-						Supplier:         "NOASSERTION",
-					}
-
-					if *includeLicense {
-						declared, discovered, err := getLicense(&purl)
-						if err == nil && len(declared) > 0 {
-							pkg.LicenseDeclared = declared
-						} else if err == nil && len(discovered) > 0 {
-							pkg.LicenseConcluded = discovered
-						}
-					}
-
-					packages = append(packages, pkg)
-					i += 1
-				}
-			}
-		}
-
-		license := getRepoLicense(repo.Owner(), repo.Name())
-		if license == "" {
-			license = "NOASSERTION"
-		}
-
-		doc := spdx.MakeDoc(version, license, repo.Host(), repo.Owner(), repo.Name(), packages)
-
-		jsonBinary, err := json.Marshal(&doc)
+        client, err := gh.RESTClient(nil)
 		if err != nil {
 			log.Fatal(err)
 		}
+
+        url := "repos/" + repo.Owner() + "/" + repo.Name() + "/dependency-graph/sbom"
+        response := struct{
+            SBOM map[string]interface{}
+        }{}
+
+        err = client.Get(url, &response)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+        jsonBinary, err := json.Marshal(&response.SBOM)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		fmt.Println(string(jsonBinary))
-	}
+    }
 }

@@ -2,43 +2,39 @@
 
 This is a `gh` CLI extension that outputs JSON SBOMs (in SPDX or CycloneDX format) for your GitHub repository using information from [Dependency graph](https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/about-the-dependency-graph).
 
-It can optionally include license information with `-l`. License information comes from [ClearlyDefined](https://clearlydefined.io/)'s API.
+SPDX output use the [Dependency Graph SBOM API](https://docs.github.com/en/rest/dependency-graph/sboms?apiVersion=2022-11-28), which quickly generates the SBOM server-side, and as such is faster, works for large repositories, and always includes license information.
+
+CycloneDX output is generating by assembling the dependency information from the Dependency Graph GraphQL API, and license information (if you specify `-l`) from [ClearlyDefined](https://clearlydefined.io/)'s API. As such, CycloneDX output is slower, and may not work for large repositories.
 
 Here's an example of generating a SPDX SBOM:
 ```
-$ gh sbom -l | jq
+$ gh sbom | jq
 {
-  "spdxVersion": "SPDX-2.3",
-  "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
-  "name": "github.com/advanced-security/gh-sbom",
-  "documentNamespace": "https://spdx.org/spdxdocs/github.com/advanced-security/gh-sbom-81f6ee97-cae4-42a4-9be0-840bd3dde2a7",
   "creationInfo": {
+    "created": "2023-04-12T18:41:40Z",
     "creators": [
-      "Organization: GitHub, Inc",
-      "Tool: gh-sbom-0.0.8"
-    ],
-    "created": "2023-03-10T21:12:26Z"
+      "Tool: GitHub.com-Dependency-Graph"
+    ]
   },
+  "dataLicense": "CC0-1.0",
+  "documentDescribes": [
+    "com.github.advanced-security/gh-sbom"
+  ],
+  "documentNamespace": "https://github.com/advanced-security/gh-sbom/dependency_graph/sbom-fa3abb267af77b5d",
+  "name": "com.github.advanced-security/gh-sbom",
   "packages": [
     {
-      "name": "gh-sbom",
-      "SPDXID": "SPDXRef-mainPackage",
-      "versionInfo": "",
-      "downloadLocation": "git+https://github.com/advanced-security/gh-sbom.git",
-      "filesAnalyzed": false,
+      "SPDXID": "SPDXRef-go-github.com/cli/go-gh-1.1.0",
+      "downloadLocation": "NOASSERTION",
       "externalRefs": [
         {
           "referenceCategory": "PACKAGE-MANAGER",
-          "referenceType": "purl",
-          "referenceLocator": "pkg:github/advanced-security/gh-sbom"
+          "referenceLocator": "pkg:golang/github.com/cli/go-gh@1.1.0",
+          "referenceType": "purl"
         }
       ],
-      "licenseConcluded": "NOASSERTION",
-      "licenseDeclared": "MIT",
-      "supplier": "NOASSERTION"
-    },
-    ...
+...
 ```
 
 Or for CycloneDX use `-c`:
@@ -54,7 +50,7 @@ $ gh sbom -c -l | jq
       {
         "vendor": "advanced-security",
         "name": "gh-sbom",
-        "version": "0.0.8"
+        "version": "0.0.9"
       }
     ],
     "licenses": [
