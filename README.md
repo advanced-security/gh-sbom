@@ -89,7 +89,7 @@ $ gh ext remove advanced-security/gh-sbom
 $ gh ext install advanced-security/gh-sbom
 ```
 
-Finally, if you are planning to run this on a GHES instance, you will need to be on: `GHES 3.8` or higher. 
+Finally, if you are planning to run this on a GHES instance, you will need to be on: `GHES 3.9` or higher.
 
 ## License
 
