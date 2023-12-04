@@ -1,10 +1,13 @@
 name: release
 on:
+  workflow_dispatch:
   push:
     tags:
       - "v*"
 permissions:
   contents: write
+  id-token: write
+  packages: write
 
 jobs:
   release:
@@ -12,3 +15,46 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: cli/gh-extension-precompile@v1
+        with: draft_release: true
+      - uses: github-early-access/generate-build-provenance@main
+        with:
+          subject_path: "dist/android-amd64"
+      - uses: github-early-access/generate-build-provenance@main
+        with:
+          subject_path: "dist/android-arm64"
+      - uses: github-early-access/generate-build-provenance@main
+        with:
+          subject_path: "dist/darwin-amd64"
+      - uses: github-early-access/generate-build-provenance@main
+        with:
+          subject_path: "dist/darwin-arm64"
+      - uses: github-early-access/generate-build-provenance@main
+        with:
+          subject_path: "dist/freebsd-386"
+      - uses: github-early-access/generate-build-provenance@main
+        with:
+          subject_path: "dist/freebsd-amd64"
+      - uses: github-early-access/generate-build-provenance@main
+        with:
+          subject_path: "dist/freebsd-arm64"
+      - uses: github-early-access/generate-build-provenance@main
+        with:
+          subject_path: "dist/linux-386"
+      - uses: github-early-access/generate-build-provenance@main
+        with:
+          subject_path: "dist/linux-amd64"
+      - uses: github-early-access/generate-build-provenance@main
+        with:
+          subject_path: "dist/linux-arm"
+      - uses: github-early-access/generate-build-provenance@main
+        with:
+          subject_path: "dist/linux-arm64"
+      - uses: github-early-access/generate-build-provenance@main
+        with:
+          subject_path: "dist/windows-386"
+      - uses: github-early-access/generate-build-provenance@main
+        with:
+          subject_path: "dist/windows-amd64"
+      - uses: github-early-access/generate-build-provenance@main
+        with:
+          subject_path: "dist/windows-arm64"
