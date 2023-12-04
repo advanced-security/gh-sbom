@@ -19,43 +19,43 @@ jobs:
           draft_release: true
       - uses: github-early-access/generate-build-provenance@main
         with:
-          subject_path: "dist/android-amd64"
+          subject-path: "dist/android-amd64"
       - uses: github-early-access/generate-build-provenance@main
         with:
-          subject_path: "dist/android-arm64"
+          subject-path: "dist/android-arm64"
       - uses: github-early-access/generate-build-provenance@main
         with:
-          subject_path: "dist/darwin-amd64"
+          subject-path: "dist/darwin-amd64"
       - uses: github-early-access/generate-build-provenance@main
         with:
-          subject_path: "dist/darwin-arm64"
+          subject-path: "dist/darwin-arm64"
       - uses: github-early-access/generate-build-provenance@main
         with:
-          subject_path: "dist/freebsd-386"
+          subject-path: "dist/freebsd-386"
       - uses: github-early-access/generate-build-provenance@main
         with:
-          subject_path: "dist/freebsd-amd64"
+          subject-path: "dist/freebsd-amd64"
       - uses: github-early-access/generate-build-provenance@main
         with:
-          subject_path: "dist/freebsd-arm64"
+          subject-path: "dist/freebsd-arm64"
       - uses: github-early-access/generate-build-provenance@main
         with:
-          subject_path: "dist/linux-386"
+          subject-path: "dist/linux-386"
       - uses: github-early-access/generate-build-provenance@main
         with:
-          subject_path: "dist/linux-amd64"
+          subject-path: "dist/linux-amd64"
       - uses: github-early-access/generate-build-provenance@main
         with:
-          subject_path: "dist/linux-arm"
+          subject-path: "dist/linux-arm"
       - uses: github-early-access/generate-build-provenance@main
         with:
-          subject_path: "dist/linux-arm64"
+          subject-path: "dist/linux-arm64"
       - uses: github-early-access/generate-build-provenance@main
         with:
-          subject_path: "dist/windows-386"
+          subject-path: "dist/windows-386"
       - uses: github-early-access/generate-build-provenance@main
         with:
-          subject_path: "dist/windows-amd64"
+          subject-path: "dist/windows-amd64"
       - uses: github-early-access/generate-build-provenance@main
         with:
-          subject_path: "dist/windows-arm64"
+          subject-path: "dist/windows-arm64"
