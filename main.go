@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"strings"
 
-	gh "github.com/cli/go-gh"
-	"github.com/cli/go-gh/pkg/repository"
+	"github.com/cli/go-gh/v2/pkg/api"
+	"github.com/cli/go-gh/v2/pkg/repository"
 	"github.com/spf13/pflag"
 
 	"github.com/advanced-security/gh-sbom/pkg/cyclonedx"
@@ -178,7 +178,7 @@ type RepoResp struct {
 }
 
 func getRepoLicense(owner, repo string) string {
-	client, err := gh.RESTClient(nil)
+	client, err := api.DefaultRESTClient()
 	if err != nil {
 		return ""
 	}
@@ -205,7 +205,7 @@ func main() {
 	var err error
 
 	if *repoOverride == "" {
-		repo, err = gh.CurrentRepository()
+		repo, err = repository.Current()
 	} else {
 		repo, err = repository.Parse(*repoOverride)
 	}
@@ -215,10 +215,10 @@ func main() {
 	}
 
 	if *cdx {
-        dependencies := dg.GetDependencies(repo.Owner(), repo.Name())
+        dependencies := dg.GetDependencies(repo.Owner, repo.Name)
 
         if len(dependencies) == 0 {
-            log.Fatal("No dependencies found\n\nIf you own this repository, check if Dependency Graph is enabled:\nhttps://" + repo.Host() + "/" + repo.Owner() + "/" + repo.Name() + "/settings/security_analysis\n\n")
+            log.Fatal("No dependencies found\n\nIf you own this repository, check if Dependency Graph is enabled:\nhttps://" + repo.Host + "/" + repo.Owner + "/" + repo.Name + "/settings/security_analysis\n\n")
         }
 
 		components := []cyclonedx.Component{}
@@ -268,12 +268,12 @@ func main() {
 		fmt.Println(string(jsonBinary))
 
 	} else {
-        client, err := gh.RESTClient(nil)
+        client, err := api.DefaultRESTClient()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-        url := "repos/" + repo.Owner() + "/" + repo.Name() + "/dependency-graph/sbom"
+        url := "repos/" + repo.Owner + "/" + repo.Name + "/dependency-graph/sbom"
         response := struct{
             SBOM map[string]interface{}
         }{}
