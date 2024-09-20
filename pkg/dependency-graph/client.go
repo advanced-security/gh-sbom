@@ -4,8 +4,7 @@ import (
 	"log"
 	"strings"
 
-	gh "github.com/cli/go-gh"
-	"github.com/cli/go-gh/pkg/api"
+	"github.com/cli/go-gh/v2/pkg/api"
 	graphql "github.com/cli/shurcooL-graphql"
 )
 
@@ -43,7 +42,7 @@ func GetDependencies(repoOwner, repoName string) DependencyMap {
 		Headers: map[string]string{"Accept": "application/vnd.github.hawkgirl-preview+json"},
 	}
 
-	client, err := gh.GQLClient(&opts)
+	client, err := api.NewGraphQLClient(opts)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -65,7 +64,7 @@ func GetDependencies(repoOwner, repoName string) DependencyMap {
 	return dependencies
 }
 
-func makeQuery(client api.GQLClient, repoOwner, repoName string, manifestCursor, dependencyCursor *graphql.String, query *Query, dependencies *DependencyMap) {
+func makeQuery(client *api.GraphQLClient, repoOwner, repoName string, manifestCursor, dependencyCursor *graphql.String, query *Query, dependencies *DependencyMap) {
 	variables := map[string]interface{}{
 		"name":             graphql.String(repoName),
 		"owner":            graphql.String(repoOwner),
