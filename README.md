@@ -80,13 +80,13 @@ This is an extension to the `gh` CLI. See [gh CLI installation](https://github.c
 
 Once `gh` is installed, you can install this extension with:
 ```
-$ gh ext install advanced-security/gh-sbom
+gh ext install advanced-security/gh-sbom
 ```
 
 If you want to upgrade to the latest version you can remove and reinstall the extension:
 ```
-$ gh ext remove advanced-security/gh-sbom
-$ gh ext install advanced-security/gh-sbom
+gh ext remove advanced-security/gh-sbom
+gh ext install advanced-security/gh-sbom
 ```
 
 Finally, if you are planning to run this on a GHES instance, you will need to be on: `GHES 3.9` or higher.
